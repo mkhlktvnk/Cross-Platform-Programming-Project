@@ -2,12 +2,12 @@ package com.example.javaproject.services;
 import com.example.javaproject.cache.calculation.CalculationCache;
 import com.example.javaproject.entity.CalculationParams;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class CalculatorService {
     @Autowired
     private CalculationCache calculationCache;
@@ -22,9 +22,9 @@ public class CalculatorService {
             logger.info("Result taken from cache");
             return calculationCache.getResultByParams(calculationParams);
         }
-        Double sum = 0.0;
         int n = 100;
         Double h = (calculationParams.getHighValue() - calculationParams.getLowValue()) / 2;
+        Double sum = 0.0;
         for (int i = 1; i <= n; i++) {
             sum += 2 * mathFunction(calculationParams.getLowValue() + i * h);
         }

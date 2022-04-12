@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 
-@Component("calculationCache")
+@Component
 public class CalculationCache {
     private final HashMap<CalculationParams, Double> calculationHashMap = new HashMap<>();
 

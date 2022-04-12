@@ -14,7 +14,6 @@ import java.util.HashMap;
 @RestController
 public class CalculationController {
     private final CalculatorService calculatorService;
-    private static final Logger logger = LoggerFactory.getLogger(CalculationController.class);
 
     @Autowired
     public CalculationController(CalculatorService calculatorService) {
@@ -30,8 +29,7 @@ public class CalculationController {
             throw new WrongArgumentsOrderException("Wrong arguments order");
         }
         CalculationParams calculationParams = new CalculationParams(low, high);
-        double result = calculatorService.performCalculation(calculationParams);
-        logger.info("Result calculated successfully");
+        Double result = calculatorService.performCalculation(calculationParams);
 
         return new HashMap<>() {{
             put("low-value", low);
