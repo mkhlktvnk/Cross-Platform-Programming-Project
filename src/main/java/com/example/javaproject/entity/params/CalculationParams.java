@@ -1,4 +1,4 @@
-package com.example.javaproject.entity;
+package com.example.javaproject.entity.params;
 
 import java.util.Objects;
 

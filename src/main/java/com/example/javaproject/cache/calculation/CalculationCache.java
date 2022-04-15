@@ -1,6 +1,6 @@
 package com.example.javaproject.cache.calculation;
 
-import com.example.javaproject.entity.CalculationParams;
+import com.example.javaproject.entity.params.CalculationParams;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
