@@ -3,14 +3,19 @@ package com.example.javaproject.controllers.calculation;
 import com.example.javaproject.cache.calculation.CalculationCache;
 import com.example.javaproject.entity.counter.RequestCounter;
 import com.example.javaproject.entity.params.CalculationParams;
-import com.example.javaproject.exceptions.calculation.WrongArgumentsOrderException;
+import com.example.javaproject.exceptions.calculation.WrongArgsOrderException;
 import com.example.javaproject.services.CalculatorService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 @RestController
@@ -20,19 +25,19 @@ public class CalculationController {
     private final Logger logger = LogManager.getLogger(CalculationController.class);
 
     @Autowired
-    public CalculationController(CalculatorService calculatorService, CalculationCache calculationCache1) {
+    public CalculationController(CalculatorService calculatorService, CalculationCache calculationCache) {
         this.calculatorService = calculatorService;
-        this.calculationCache = calculationCache1;
+        this.calculationCache = calculationCache;
     }
 
     @RequestMapping(value = "/calculation", method = RequestMethod.GET, produces = "application/json")
     public HashMap<String, Double> calculation(
             @RequestParam(name = "lv") double low,
             @RequestParam(name = "hv") double high)
-            throws WrongArgumentsOrderException {
+            throws WrongArgsOrderException {
         if (low > high) {
             logger.error("Error! highValue is bigger than lowValue");
-            throw new WrongArgumentsOrderException("Wrong arguments order");
+            throw new WrongArgsOrderException("Wrong arguments order");
         }
         CalculationParams calculationParams = new CalculationParams(low, high);
         Double result = 0.0;
@@ -62,5 +67,18 @@ public class CalculationController {
             put("high-value", high);
             put("result", finalResult);
         }};
+    }
+
+    @RequestMapping(value = "/calculation", method = RequestMethod.POST, produces = "application/json")
+    public ResponseEntity<?> calculateBulkParams(@Valid @RequestBody List<CalculationParams> calculationParamsList) {
+        List<Double> resultList = new LinkedList<>();
+        calculationParamsList.forEach((calculationParam) -> {
+            resultList.add(calculatorService.performCalculation(calculationParam));
+        });
+        Double min = calculatorService.getMinResult(resultList);
+        Double max = calculatorService.getMaxResult(resultList);
+        Double sum = calculatorService.calculateSum(resultList);
+        return new ResponseEntity<>(resultList + "\nsum: " + sum + "\nmin: " + min + "\nmax: " + max,
+                HttpStatus.OK);
     }
 }
