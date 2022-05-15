@@ -35,10 +35,6 @@ public class CalculationController {
             @RequestParam(name = "lv") double low,
             @RequestParam(name = "hv") double high)
             throws WrongArgsOrderException {
-        if (low > high) {
-            logger.error("Error! highValue is bigger than lowValue");
-            throw new WrongArgsOrderException("Wrong arguments order");
-        }
         CalculationParams calculationParams = new CalculationParams(low, high);
         Double result = 0.0;
 
@@ -73,7 +69,11 @@ public class CalculationController {
     public ResponseEntity<?> calculateBulkParams(@Valid @RequestBody List<CalculationParams> calculationParamsList) {
         List<Double> resultList = new LinkedList<>();
         calculationParamsList.forEach((calculationParam) -> {
-            resultList.add(calculatorService.performCalculation(calculationParam));
+            try {
+                resultList.add(calculatorService.performCalculation(calculationParam));
+            } catch (WrongArgsOrderException e) {
+                logger.error("Wrong args order");
+            }
         });
         Double min = calculatorService.getMinResult(resultList);
         Double max = calculatorService.getMaxResult(resultList);

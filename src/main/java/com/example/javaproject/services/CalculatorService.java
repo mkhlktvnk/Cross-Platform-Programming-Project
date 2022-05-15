@@ -1,6 +1,7 @@
 package com.example.javaproject.services;
 import com.example.javaproject.entity.params.CalculationParams;
 
+import com.example.javaproject.exceptions.calculation.WrongArgsOrderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,9 @@ public class CalculatorService {
     }
 
     public Double performCalculation(CalculationParams calculationParams) {
+        if (calculationParams.getLowValue() > calculationParams.getHighValue()) {
+            throw new WrongArgsOrderException("Wrong args order");
+        }
         int n = 100;
         double h = (calculationParams.getHighValue() - calculationParams.getLowValue()) / 2;
         double sum = 0.0;
