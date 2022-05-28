@@ -5,7 +5,7 @@ import com.example.javaproject.entity.params.CalculationParams;
 import com.example.javaproject.entity.result.CalculationResult;
 import com.example.javaproject.exceptions.calculation.MinValueGreaterThanMaxValueException;
 import com.example.javaproject.repository.CalculationResultsRepository;
-import com.example.javaproject.services.CalculationService;
+import com.example.javaproject.exceptions.calculation.services.CalculationService;
 import com.example.javaproject.thread.RequestCounterThread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,8 +72,10 @@ public class CalculationController {
         calculationParamsList.forEach((calculationParam) -> {
             try {
                 resultList.add(calculationService.performCalculation(calculationParam));
-            } catch (MinValueGreaterThanMaxValueException e) {
-                logger.error("Exception");
+            } catch (MinValueGreaterThanMaxValueException exception) {
+                logger.error("MinValueGreaterThanMaxValueException");
+            } catch (NullPointerException exception) {
+                logger.error("NullPointerException");
             }
         });
         resultList.forEach((result) -> {

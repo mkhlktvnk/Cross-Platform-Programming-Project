@@ -1,7 +1,7 @@
 package com.example.javaproject.calculation;
 
 import com.example.javaproject.entity.params.CalculationParams;
-import com.example.javaproject.services.CalculationService;
+import com.example.javaproject.exceptions.calculation.services.CalculationService;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

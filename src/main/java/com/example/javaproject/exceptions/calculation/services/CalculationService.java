@@ -1,7 +1,6 @@
-package com.example.javaproject.services;
+package com.example.javaproject.exceptions.calculation.services;
 import com.example.javaproject.entity.params.CalculationParams;
 
-import com.example.javaproject.exceptions.calculation.MinValueGreaterThanMaxValueException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
