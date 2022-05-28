@@ -1,10 +1,12 @@
 package com.example.javaproject.controllers.calculation;
 
 import com.example.javaproject.cache.calculation.CalculationCache;
-import com.example.javaproject.entity.counter.RequestCounter;
 import com.example.javaproject.entity.params.CalculationParams;
-import com.example.javaproject.exceptions.calculation.WrongArgsOrderException;
-import com.example.javaproject.services.CalculatorService;
+import com.example.javaproject.entity.result.CalculationResult;
+import com.example.javaproject.exceptions.calculation.MinValueGreaterThanMaxValueException;
+import com.example.javaproject.repository.CalculationResultsRepository;
+import com.example.javaproject.services.CalculationService;
+import com.example.javaproject.thread.RequestCounterThread;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,72 +14,74 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 @RestController
 public class CalculationController {
-    private final CalculatorService calculatorService;
+    private final CalculationService calculationService;
     private final CalculationCache calculationCache;
     private final Logger logger = LogManager.getLogger(CalculationController.class);
+    private final CalculationResultsRepository calculationResultsRepository;
 
     @Autowired
-    public CalculationController(CalculatorService calculatorService, CalculationCache calculationCache) {
-        this.calculatorService = calculatorService;
+    public CalculationController(
+            CalculationService calculationService,
+            CalculationCache calculationCache,
+            CalculationResultsRepository calculationResultsRepository
+    ) {
+        this.calculationService = calculationService;
         this.calculationCache = calculationCache;
+        this.calculationResultsRepository = calculationResultsRepository;
     }
 
     @RequestMapping(value = "/calculation", method = RequestMethod.GET, produces = "application/json")
     public HashMap<String, Double> calculation(
-            @RequestParam(name = "lv") double low,
-            @RequestParam(name = "hv") double high)
-            throws WrongArgsOrderException {
-        CalculationParams calculationParams = new CalculationParams(low, high);
+            @RequestParam(name = "min") Double min,
+            @RequestParam(name = "max") Double max
+    ) throws MinValueGreaterThanMaxValueException {
+        if (min > max) {
+            throw new MinValueGreaterThanMaxValueException("Min greater than max");
+        }
+        CalculationParams calculationParams = new CalculationParams(min, max);
         Double result = 0.0;
-
-        Semaphore semaphore = new Semaphore(1, true);
-
         if (calculationCache.isContain(calculationParams)) {
             result = calculationCache.getResultByParams(calculationParams);
             logger.info("Result taken from cache");
         } else {
-            result = calculatorService.performCalculation(calculationParams);
+            result = calculationService.performCalculation(calculationParams);
             logger.info("Calculation performed\nResult saved to map");
             calculationCache.addResultToMap(calculationParams, result);
         }
-        try {
-            semaphore.acquire();
-            RequestCounter.inc();
-            semaphore.release();
-        } catch (InterruptedException e) {
-            logger.warn(Thread.currentThread().getName() + "was interrupted");
-        }
-
+        RequestCounterThread requestCounterThread = new RequestCounterThread("Request-Counter-Thread");
+        requestCounterThread.start();
         Double finalResult = result;
-
+        CalculationResult calculationResult = new CalculationResult(finalResult);
+        calculationResultsRepository.save(calculationResult);
         return new HashMap<>() {{
-            put("low-value", low);
-            put("high-value", high);
+            put("min-value", min);
+            put("max-value", max);
             put("result", finalResult);
         }};
     }
 
     @RequestMapping(value = "/calculation", method = RequestMethod.POST, produces = "application/json")
-    public ResponseEntity<?> calculateBulkParams(@Valid @RequestBody List<CalculationParams> calculationParamsList) {
+    public ResponseEntity<?> calculateBulkParams(@RequestBody List<CalculationParams> calculationParamsList) {
         List<Double> resultList = new LinkedList<>();
         calculationParamsList.forEach((calculationParam) -> {
             try {
-                resultList.add(calculatorService.performCalculation(calculationParam));
-            } catch (WrongArgsOrderException e) {
-                logger.error("Wrong args order");
+                resultList.add(calculationService.performCalculation(calculationParam));
+            } catch (MinValueGreaterThanMaxValueException e) {
+                logger.error("Exception");
             }
         });
-        Double min = calculatorService.getMinResult(resultList);
-        Double max = calculatorService.getMaxResult(resultList);
-        Double sum = calculatorService.calculateSum(resultList);
+        resultList.forEach((result) -> {
+            calculationResultsRepository.save(new CalculationResult(result));
+        });
+        Double min = calculationService.getMinResult(resultList);
+        Double max = calculationService.getMaxResult(resultList);
+        Double sum = calculationService.getSum(resultList);
         return new ResponseEntity<>(resultList + "\nsum: " + sum + "\nmin: " + min + "\nmax: " + max,
                 HttpStatus.OK);
     }
